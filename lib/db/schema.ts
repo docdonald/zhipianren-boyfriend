@@ -1,32 +1,35 @@
 // 数据库 schema - 覆盖账号/记忆/亲密度/邮件订阅
-import { sql } from "drizzle-orm";
 import {
+  boolean,
   integer,
+  pgTable,
   primaryKey,
-  sqliteTable,
   text,
+  timestamp,
   uniqueIndex,
-} from "drizzle-orm/sqlite-core";
+} from "drizzle-orm/pg-core";
 
 // ===== NextAuth 必需表 =====
 
-export const users = sqliteTable("user", {
+export const users = pgTable("user", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
   name: text("name"),
   email: text("email").unique(),
-  emailVerified: integer("emailVerified", { mode: "timestamp_ms" }),
+  emailVerified: timestamp("emailVerified", { mode: "date" }),
   image: text("image"),
+  // 密码（bcrypt 哈希）
+  password: text("password"),
   // 业务字段
-  onboardedAt: integer("onboarded_at", { mode: "timestamp_ms" }),
+  onboardedAt: timestamp("onboarded_at", { mode: "date" }),
   // 邮件订阅
-  emailOptIn: integer("email_opt_in", { mode: "boolean" }).default(true),
+  emailOptIn: boolean("email_opt_in").default(true),
   // 活跃时间
-  lastSeenAt: integer("last_seen_at", { mode: "timestamp_ms" }),
+  lastSeenAt: timestamp("last_seen_at", { mode: "date" }),
 });
 
-export const accounts = sqliteTable(
+export const accounts = pgTable(
   "account",
   {
     userId: text("userId")
@@ -50,20 +53,20 @@ export const accounts = sqliteTable(
   })
 );
 
-export const sessions = sqliteTable("session", {
+export const sessions = pgTable("session", {
   sessionToken: text("sessionToken").primaryKey(),
   userId: text("userId")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
-  expires: integer("expires", { mode: "timestamp_ms" }).notNull(),
+  expires: timestamp("expires", { mode: "date" }).notNull(),
 });
 
-export const verificationTokens = sqliteTable(
+export const verificationTokens = pgTable(
   "verificationToken",
   {
     identifier: text("identifier").notNull(),
     token: text("token").notNull(),
-    expires: integer("expires", { mode: "timestamp_ms" }).notNull(),
+    expires: timestamp("expires", { mode: "date" }).notNull(),
   },
   (vt) => ({
     compoundKey: primaryKey({ columns: [vt.identifier, vt.token] }),
@@ -73,7 +76,7 @@ export const verificationTokens = sqliteTable(
 // ===== 业务表 =====
 
 // 角色表（程序化注册，但状态可独立存）
-export const characterState = sqliteTable(
+export const characterState = pgTable(
   "character_state",
   {
     userId: text("user_id")
@@ -88,12 +91,12 @@ export const characterState = sqliteTable(
       .notNull()
       .$type<CharacterData>(),
     // 时间
-    createdAt: integer("created_at", { mode: "timestamp_ms" })
+    createdAt: timestamp("created_at", { mode: "date" })
       .notNull()
-      .default(sql`(unixepoch() * 1000)`),
-    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { mode: "date" })
       .notNull()
-      .default(sql`(unixepoch() * 1000)`),
+      .defaultNow(),
   },
   (t) => ({
     pk: primaryKey({ columns: [t.userId, t.characterId] }),
@@ -101,7 +104,7 @@ export const characterState = sqliteTable(
 );
 
 // 对话历史（服务端记忆）
-export const conversations = sqliteTable("conversation", {
+export const conversations = pgTable("conversation", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
@@ -113,13 +116,13 @@ export const conversations = sqliteTable("conversation", {
   content: text("content").notNull(),
   // 当时的亲密度阶段（用于审计）
   intimacyStage: integer("intimacy_stage").notNull().default(1),
-  createdAt: integer("created_at", { mode: "timestamp_ms" })
+  createdAt: timestamp("created_at", { mode: "date" })
     .notNull()
-    .default(sql`(unixepoch() * 1000)`),
+    .defaultNow(),
 });
 
 // 用户偏好（每个角色独立）
-export const userProfile = sqliteTable(
+export const userProfile = pgTable(
   "user_profile",
   {
     userId: text("user_id")
@@ -131,12 +134,12 @@ export const userProfile = sqliteTable(
       .notNull()
       .$type<Record<string, unknown>>()
       .default({}),
-    forbiddenTouched: integer("forbidden_touched", { mode: "boolean" })
+    forbiddenTouched: boolean("forbidden_touched")
       .notNull()
       .default(false),
-    createdAt: integer("created_at", { mode: "timestamp_ms" })
+    createdAt: timestamp("created_at", { mode: "date" })
       .notNull()
-      .default(sql`(unixepoch() * 1000)`),
+      .defaultNow(),
   },
   (t) => ({
     pk: primaryKey({ columns: [t.userId, t.characterId] }),
@@ -144,14 +147,14 @@ export const userProfile = sqliteTable(
 );
 
 // 邮件退订表
-export const emailUnsubscribes = sqliteTable(
+export const emailUnsubscribes = pgTable(
   "email_unsubscribe",
   {
     email: text("email").notNull(),
     token: text("token").notNull(),
-    createdAt: integer("created_at", { mode: "timestamp_ms" })
+    createdAt: timestamp("created_at", { mode: "date" })
       .notNull()
-      .default(sql`(unixepoch() * 1000)`),
+      .defaultNow(),
   },
   (t) => ({
     emailIdx: uniqueIndex("unsub_email_idx").on(t.email),
@@ -159,7 +162,7 @@ export const emailUnsubscribes = sqliteTable(
 );
 
 // 跃迁事件表
-export const intimacyEvents = sqliteTable("intimacy_event", {
+export const intimacyEvents = pgTable("intimacy_event", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
@@ -171,9 +174,9 @@ export const intimacyEvents = sqliteTable("intimacy_event", {
   toStage: integer("to_stage").notNull(),
   reason: text("reason").notNull(), // judge 输出的原因
   judgeRaw: text("judge_raw"), // judge 的完整 JSON
-  createdAt: integer("created_at", { mode: "timestamp_ms" })
+  createdAt: timestamp("created_at", { mode: "date" })
     .notNull()
-    .default(sql`(unixepoch() * 1000)`),
+    .defaultNow(),
 });
 
 // ===== 类型 =====
@@ -198,10 +201,10 @@ export interface CharacterData {
   controlIntensity?: number;
   // 江屿
   resourceInvested?: Array<{ kind: string; value: string; ts: number }>;
+  resourceQuota?: number;
+  lastSpendTs?: number;
   // 夏野
-  sunlightLevel?: number; // 0-100
-  // 通用
-  emotionHistory?: Array<{ emotion: string; ts: number }>;
-  keyEvents?: Array<{ kind: string; note: string; ts: number }>;
-  vulnerabilityExposed?: boolean;
+  nightModeActive?: boolean;
+  lastNightConfession?: string;
+  daytimeDeflectionCount?: number;
 }

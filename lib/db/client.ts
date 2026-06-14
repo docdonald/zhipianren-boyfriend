@@ -1,14 +1,12 @@
-// Drizzle ORM + libSQL 客户端
-import { drizzle } from "drizzle-orm/libsql";
-import { createClient } from "@libsql/client";
+// Drizzle ORM + PostgreSQL 客户端（Neon）
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 import * as schema from "./schema";
 
-const url = process.env.DATABASE_URL ?? "file:./data/pb.db";
-const authToken = process.env.TURSO_TOKEN;
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  throw new Error("DATABASE_URL is not defined");
+}
 
-const client = createClient({
-  url,
-  authToken,
-});
-
+const client = postgres(connectionString, { prepare: false });
 export const db = drizzle(client, { schema });

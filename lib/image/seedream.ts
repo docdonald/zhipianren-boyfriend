@@ -64,6 +64,8 @@ export interface GenerateImageInput {
   prompt: string;
   size?: "2K" | "1024x1024" | "1024x1536" | "1536x1024";
   watermark?: boolean;
+  /** 参考图：base64 字符串 (data:image/png;base64,...) 或 URL */
+  image?: string;
 }
 
 export interface GenerateImageResult {
@@ -102,6 +104,7 @@ export async function generateImage(
         stream: false,
         watermark: input.watermark ?? true,
         sequential_image_generation: "disabled",
+        ...(input.image ? { image: input.image } : {}),
       }),
       signal: controller.signal,
     });
@@ -243,14 +246,27 @@ export async function generateContextualPortrait(
   const scenes = CONTEXTUAL_SCENES[characterId] ?? [];
   const scene = customScene ?? scenes[Math.floor(Math.random() * scenes.length)] ?? "selfie angle, natural lighting";
 
+  // 读取首页人物头像作为参考图
+  let referenceImageBase64: string | undefined;
+  try {
+    const imagePath = resolve(process.cwd(), "public", "characters", `${characterId}.png`);
+    const imageBuffer = readFileSync(imagePath);
+    referenceImageBase64 = `data:image/png;base64,${imageBuffer.toString("base64")}`;
+  } catch (e) {
+    console.warn(`[seedream] 未找到参考图 public/characters/${characterId}.png，将使用纯文生图`);
+  }
+
   // 融合 prompt：基础形象锚点 + 情境 + 一致性约束
-  const prompt = `${basePrompt}. ${scene}. Same person, consistent facial features and hairstyle, high quality portrait, cinematic color grading.`;
+  const prompt = referenceImageBase64
+    ? `Generate a selfie photo of the exact same person in the reference image. Maintain the same art style, facial features, hairstyle, and clothing color scheme as the reference image. Scene: ${scene}. High quality portrait.`
+    : `${basePrompt}. ${scene}. Same person, consistent facial features and hairstyle, high quality portrait, cinematic color grading.`;
 
   try {
     const result = await generateImage({
       prompt,
       size: "1024x1024",
       watermark: true,
+      image: referenceImageBase64,
     });
     return { url: result.url };
   } catch (err) {

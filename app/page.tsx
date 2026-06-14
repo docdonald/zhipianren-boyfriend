@@ -4,6 +4,7 @@ import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { CHARACTERS } from "@/lib/ai/characters";
 import CharacterCard from "@/components/CharacterCard";
+import SignOutButton from "@/components/SignOutButton";
 
 export const dynamic = "force-dynamic";
 
@@ -33,14 +34,23 @@ export default async function LandingPage() {
               >
                 回忆录
               </Link>
+              <SignOutButton />
             </>
           ) : (
-            <Link
-              href="/auth/signin?callbackUrl=/"
-              className="px-4 py-2 border border-white/20 rounded-full text-white/80 hover:border-white/40 hover:text-white text-sm transition-colors"
-            >
-              登录
-            </Link>
+            <>
+              <Link
+                href="/auth/signin?mode=login&callbackUrl=/"
+                className="text-white/60 hover:text-white text-sm transition-colors"
+              >
+                登录
+              </Link>
+              <Link
+                href="/auth/signin?mode=register&callbackUrl=/"
+                className="px-4 py-2 border border-white/20 rounded-full text-white/80 hover:border-white/40 hover:text-white text-sm transition-colors"
+              >
+                注册
+              </Link>
+            </>
           )}
         </div>
       </nav>

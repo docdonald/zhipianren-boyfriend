@@ -1,28 +1,60 @@
-// 登录页
+// 登录/注册页（邮箱+密码）
 import { signIn } from "@/lib/auth";
+import { db } from "@/lib/db/client";
+import { users } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
+import bcrypt from "bcryptjs";
+import { CredentialsSignin } from "next-auth";
+import { redirect } from "next/navigation";
 
 export default function SignInPage({
   searchParams,
 }: {
-  searchParams: { verify?: string; callbackUrl?: string };
+  searchParams: {
+    verify?: string;
+    callbackUrl?: string;
+    mode?: string;
+    error?: string;
+  };
 }) {
   const isVerify = searchParams.verify === "1";
   const callbackUrl = searchParams.callbackUrl ?? "/";
+  const isRegister = searchParams.mode === "register";
+  const error = searchParams.error;
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0a0a0a] via-[#0f0f0f] to-[#1a1a1a] text-white p-6">
       <div className="w-full max-w-md">
         <div className="text-center mb-10">
           <h1 className="text-3xl font-bold">纸片人男友</h1>
-          <p className="text-white/60 mt-2 text-sm">4 个平行世界的他，等你</p>
+          <p className="text-white/60 mt-2 text-sm">
+            4 个平行世界的他，等你
+          </p>
         </div>
+
+        {error && (
+          <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-center text-sm text-red-400">
+            {error === "user_exists" && "该邮箱已注册，请直接登录。"}
+            {error === "invalid_credentials" && "邮箱或密码错误。"}
+            {error === "password_mismatch" && "两次输入的密码不一致。"}
+            {error === "missing_fields" && "请填写完整信息。"}
+            {!(
+              [
+                "user_exists",
+                "invalid_credentials",
+                "password_mismatch",
+                "missing_fields",
+              ] as string[]
+            ).includes(error) && error}
+          </div>
+        )}
 
         {isVerify ? (
           <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-center">
             <div className="text-4xl mb-4">✉️</div>
             <h2 className="text-lg font-semibold mb-2">查看你的邮箱</h2>
             <p className="text-white/60 text-sm">
-              我们已把登录链接发到你的邮箱。
+              我们已把验证链接发到你的邮箱。
               <br />
               点击链接即可进入。
             </p>
@@ -32,14 +64,74 @@ export default function SignInPage({
             action={async (formData) => {
               "use server";
               const email = formData.get("email")?.toString() ?? "";
-              if (!email) return;
-              await signIn("resend", { email, redirectTo: callbackUrl });
+              const password = formData.get("password")?.toString() ?? "";
+
+              if (!email || !password) {
+                redirect(
+                  `/auth/signin?mode=${isRegister ? "register" : "login"}&error=missing_fields&callbackUrl=${encodeURIComponent(callbackUrl)}`
+                );
+                return;
+              }
+
+              if (isRegister) {
+                const confirmPassword =
+                  formData.get("confirmPassword")?.toString() ?? "";
+                if (password !== confirmPassword) {
+                  redirect(
+                    `/auth/signin?mode=register&error=password_mismatch&callbackUrl=${encodeURIComponent(callbackUrl)}`
+                  );
+                  return;
+                }
+
+                const existing = await db
+                  .select()
+                  .from(users)
+                  .where(eq(users.email, email))
+                  .limit(1);
+                if (existing.length > 0) {
+                  redirect(
+                    `/auth/signin?mode=register&error=user_exists&callbackUrl=${encodeURIComponent(callbackUrl)}`
+                  );
+                  return;
+                }
+
+                const hashedPassword = await bcrypt.hash(password, 10);
+                await db.insert(users).values({
+                  email,
+                  password: hashedPassword,
+                });
+              }
+
+              try {
+                await signIn("credentials", {
+                  email,
+                  password,
+                  redirectTo: callbackUrl,
+                });
+              } catch (e) {
+                // 成功登录时 next-auth 会抛出 redirect 错误，需要放行
+                if (
+                  e instanceof Error &&
+                  (e.message.includes("NEXT_REDIRECT") ||
+                    e.message.includes("redirect"))
+                ) {
+                  throw e;
+                }
+                // 认证失败
+                redirect(
+                  `/auth/signin?mode=login&error=invalid_credentials&callbackUrl=${encodeURIComponent(callbackUrl)}`
+                );
+              }
             }}
             className="rounded-2xl border border-white/10 bg-white/5 p-6"
           >
-            <h2 className="text-lg font-semibold mb-1">用邮箱登录</h2>
+            <h2 className="text-lg font-semibold mb-1">
+              {isRegister ? "注册账号" : "用邮箱登录"}
+            </h2>
             <p className="text-white/50 text-xs mb-5">
-              无需密码。我们会发一封登录链接到你的邮箱。
+              {isRegister
+                ? "新用户注册，输入邮箱和密码即可。"
+                : "老用户输入邮箱和密码直接登录。"}
             </p>
             <input
               name="email"
@@ -48,17 +140,57 @@ export default function SignInPage({
               placeholder="your@email.com"
               className="w-full bg-white/5 border border-white/10 rounded-full px-4 py-3 text-white placeholder:text-white/40 focus:outline-none focus:border-white/30 mb-3"
             />
+            <input
+              name="password"
+              type="password"
+              required
+              placeholder="密码"
+              className="w-full bg-white/5 border border-white/10 rounded-full px-4 py-3 text-white placeholder:text-white/40 focus:outline-none focus:border-white/30 mb-3"
+            />
+            {isRegister && (
+              <input
+                name="confirmPassword"
+                type="password"
+                required
+                placeholder="确认密码"
+                className="w-full bg-white/5 border border-white/10 rounded-full px-4 py-3 text-white placeholder:text-white/40 focus:outline-none focus:border-white/30 mb-3"
+              />
+            )}
             <button
               type="submit"
               className="w-full px-6 py-3 rounded-full bg-white text-black font-medium text-sm hover:bg-white/90"
             >
-              发送登录链接
+              {isRegister ? "注册" : "登录"}
             </button>
+
+            <div className="mt-4 text-center">
+              {isRegister ? (
+                <a
+                  href={`/auth/signin?mode=login&callbackUrl=${encodeURIComponent(
+                    callbackUrl
+                  )}`}
+                  className="text-white/40 hover:text-white/70 text-xs"
+                >
+                  已有账号？直接登录 →
+                </a>
+              ) : (
+                <a
+                  href={`/auth/signin?mode=register&callbackUrl=${encodeURIComponent(
+                    callbackUrl
+                  )}`}
+                  className="text-white/40 hover:text-white/70 text-xs"
+                >
+                  还没有账号？立即注册 →
+                </a>
+              )}
+            </div>
           </form>
         )}
 
         <p className="text-white/30 text-xs text-center mt-6">
-          登录后，他会在邮箱里偶尔想起你。
+          {isRegister
+            ? "注册后，即可开启属于你的 4 段平行关系。"
+            : "登录后，他会在邮箱里偶尔想起你。"}
           <br />
           你可以随时退订。
         </p>
