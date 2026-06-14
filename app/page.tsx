@@ -202,6 +202,13 @@ export default async function LandingPage() {
             已有账号？登录 →
           </Link>
         )}
+        <div className="mt-8 flex items-center justify-center gap-4 text-white/30 text-xs">
+          <Link href="/privacy" className="hover:text-white/60 transition-colors">
+            隐私政策
+          </Link>
+          <span>·</span>
+          <span>纸片人男友</span>
+        </div>
       </footer>
     </main>
   );
