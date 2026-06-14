@@ -1,0 +1,177 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* === 字体导入（Google Fonts CDN） === */
+@import url("https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@300;400;700&family=Noto+Serif+SC:wght@300;400;500;700&family=Noto+Sans+SC:wght@300;400;500;700&family=JetBrains+Mono:wght@300;400;500&display=swap");
+
+:root {
+  color-scheme: dark;
+  --lin-primary: #8B6F47;
+  --lin-secondary: #C9A87C;
+  --lin-ink: #2A1F1A;
+  --lin-paper: #F5EFE6;
+  --lin-dark: #3D2A4A;
+  --zhou-primary: #1A1A1A;
+  --zhou-ink: #000000;
+  --jiang-primary: #3B82F6;
+  --jiang-ink: #0F172A;
+  --xia-primary: #F59E0B;
+  --xia-ink: #451A03;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: #0a0a0a;
+  color: white;
+  font-family: "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* === 字体类 === */
+.font-serif-cn {
+  font-family: "LXGW WenKai TC", "Noto Serif SC", "Source Han Serif SC", Georgia, serif;
+  letter-spacing: 0.02em;
+}
+.font-mono-cn {
+  font-family: "JetBrains Mono", "Fira Code", "SF Mono", ui-monospace, monospace;
+}
+
+/* === 滚动条 === */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* === 中文断行优化 === */
+.cn-text {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  line-height: 1.8;
+}
+
+/* === 选择文字高亮 === */
+::selection {
+  background: rgba(201, 168, 124, 0.3);
+  color: white;
+}
+
+/* === 胶片噪点叠层 === */
+.film-grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.15 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  pointer-events: none;
+  mix-blend-mode: overlay;
+  opacity: 0.4;
+}
+
+/* === 标题首字下沉 === */
+.first-letter-drop::first-letter {
+  font-size: 3.2em;
+  font-weight: 700;
+  float: left;
+  line-height: 0.9;
+  margin: 0.05em 0.08em 0 -0.04em;
+  color: var(--lin-primary);
+  font-family: "LXGW WenKai TC", serif;
+}
+
+/* === 文字渐入交错（用于开场） === */
+.stagger-1 { animation-delay: 0.1s; animation-fill-mode: backwards; }
+.stagger-2 { animation-delay: 0.25s; animation-fill-mode: backwards; }
+.stagger-3 { animation-delay: 0.4s; animation-fill-mode: backwards; }
+.stagger-4 { animation-delay: 0.55s; animation-fill-mode: backwards; }
+.stagger-5 { animation-delay: 0.7s; animation-fill-mode: backwards; }
+.stagger-6 { animation-delay: 0.85s; animation-fill-mode: backwards; }
+.stagger-7 { animation-delay: 1.0s; animation-fill-mode: backwards; }
+.stagger-8 { animation-delay: 1.15s; animation-fill-mode: backwards; }
+
+/* === 章节编号（小说体） === */
+.chapter-num {
+  font-family: "LXGW WenKai TC", "Noto Serif SC", serif;
+  font-style: italic;
+  letter-spacing: 0.3em;
+  font-weight: 300;
+}
+
+/* === 等宽终端光标 === */
+.term-cursor::after {
+  content: "▎";
+  animation: blink 1s step-end infinite;
+  margin-left: 2px;
+  color: #3B82F6;
+}
+
+/* === 装饰性边角 === */
+.corner-frame {
+  position: relative;
+}
+.corner-frame::before,
+.corner-frame::after {
+  content: "";
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border: 1px solid currentColor;
+  opacity: 0.4;
+}
+.corner-frame::before {
+  top: 0;
+  left: 0;
+  border-right: none;
+  border-bottom: none;
+}
+.corner-frame::after {
+  bottom: 0;
+  right: 0;
+  border-left: none;
+  border-top: none;
+}
+
+/* === 卷轴展开 === */
+@keyframes scrollOpen {
+  from { transform: scaleY(0); opacity: 0; }
+  to { transform: scaleY(1); opacity: 1; }
+}
+.scroll-open {
+  transform-origin: top;
+  animation: scrollOpen 1s ease-out;
+}
+
+/* === 字符逐个出现（用于序章） === */
+.char-reveal > span {
+  display: inline-block;
+  opacity: 0;
+  animation: fadeIn 0.4s forwards;
+}
+
+/* === TTS 按钮 === */
+.tts-fab {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.tts-fab:hover {
+  transform: scale(1.1);
+}
+
+/* === 角色专属辉光 === */
+.glow-lin { box-shadow: 0 0 40px rgba(201, 168, 124, 0.35); }
+.glow-zhou { box-shadow: 0 0 40px rgba(74, 74, 74, 0.5); }
+.glow-jiang { box-shadow: 0 0 40px rgba(59, 130, 246, 0.35); }
+.glow-xia { box-shadow: 0 0 40px rgba(252, 211, 77, 0.35); }
