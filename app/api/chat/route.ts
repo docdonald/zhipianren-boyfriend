@@ -16,6 +16,7 @@ import { judgeTransition } from "@/lib/ai/judge";
 import { stageByCount, stageDirective } from "@/lib/ai/intimacy";
 import { auth } from "@/lib/auth";
 import { CHARACTERS } from "@/lib/ai/characters";
+import { generateContextualPortrait } from "@/lib/image/seedream";
 import type {
   CharacterId,
   ChatMessage as AiChatMessage,
@@ -125,14 +126,37 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // 5. 注入亲密度指令（匿名用户固定阶段 1）
+  // 5. 查询互动量（用于自动发图判断）
+  let interactionCount = 0;
+  let lastImageAt = 0;
+  if (isLoggedIn && userId) {
+    const cnt = await db
+      .select({ c: count() })
+      .from(conversations)
+      .where(
+        and(
+          eq(conversations.userId, userId),
+          eq(conversations.characterId, characterId)
+        )
+      );
+    interactionCount = cnt[0]?.c ?? 0;
+    const data = (state?.characterData ?? {}) as {
+      lastImageAt?: number;
+    };
+    lastImageAt = data.lastImageAt ?? 0;
+  } else {
+    // 匿名用户：用 messages 中的 assistant 数量估算
+    interactionCount = messages.filter((m) => m.role === "assistant").length;
+  }
+
+  // 6. 注入亲密度指令（匿名用户固定阶段 1）
   const currentStage = state?.intimacyStage ?? 1;
   const systemPrompt =
     getSystemPrompt(characterId as CharacterId) +
     "\n\n" +
     stageDirective(characterId as CharacterId, currentStage);
 
-  // 6. 流式输出
+  // 7. 流式输出
   const encoder = new TextEncoder();
   const characterName =
     CHARACTERS.find((c) => c.id === characterId)?.name ?? characterId;
@@ -141,6 +165,7 @@ export async function POST(req: NextRequest) {
   const stream = new ReadableStream({
     async start(controller) {
       let accumulated = "";
+      let sentImageUrl: string | undefined;
       try {
         const result = streamCharacterChat({
           characterId: characterId as CharacterId,
@@ -154,6 +179,35 @@ export async function POST(req: NextRequest) {
           );
         }
         controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+
+        // ===== 图片生成（用户主动要求 / 自动触发） =====
+        const userWantsImage = lastUserMessage
+          ? detectImageIntent(lastUserMessage.content)
+          : false;
+        const currentRound = interactionCount + 1; // 本轮回复完成后累计轮数
+        const autoImage =
+          !userWantsImage && shouldAutoSendImage(currentRound, lastImageAt);
+
+        if (userWantsImage || autoImage) {
+          console.log(
+            `[chat] generating image for ${characterId} reason=${userWantsImage ? "user" : "auto"} round=${currentRound}`
+          );
+          const imageResult = await generateContextualPortrait(
+            characterId as CharacterId
+          );
+          if (imageResult?.url) {
+            sentImageUrl = imageResult.url;
+            controller.enqueue(
+              encoder.encode(
+                `data: ${JSON.stringify({
+                  imageUrl: imageResult.url,
+                  content: userWantsImage ? "给你。" : "",
+                })}\n\n`
+              )
+            );
+          }
+        }
+
         controller.close();
       } catch (err) {
         // 错误分类：LlmError → 透传给前端（status / type）
@@ -250,6 +304,7 @@ export async function POST(req: NextRequest) {
         // 10. 更新 character_state
         const newData: {
           keyEvents?: Array<{ kind: string; note: string; ts: number }>;
+          lastImageAt?: number;
           [k: string]: unknown;
         } = { ...((state?.characterData as object) ?? {}) };
         if (judge?.event) {
@@ -262,6 +317,9 @@ export async function POST(req: NextRequest) {
               ts: Date.now(),
             },
           ].slice(-20);
+        }
+        if (sentImageUrl) {
+          newData.lastImageAt = interactionCount;
         }
         await db
           .update(characterState)
@@ -306,4 +364,29 @@ function containsForbiddenContent(text: string): boolean {
     "色情",
   ];
   return keywords.some((k) => lowered.includes(k));
+}
+
+// ===== 图片意图识别 =====
+const IMAGE_INTENT_KEYWORDS = [
+  "自拍", "照片", "看看你", "看你", "发图", "图片", "头像",
+  "photo", "picture", "selfie", "portrait", "look at you", "send pic",
+  "来张", "发张", "拍张", "合照", "snapshot", "image",
+];
+
+function detectImageIntent(text: string): boolean {
+  const lowered = text.toLowerCase();
+  return IMAGE_INTENT_KEYWORDS.some((k) => lowered.includes(k));
+}
+
+// ===== 自动发图判断（7-15 轮间隔） =====
+function shouldAutoSendImage(
+  interactionCount: number,
+  lastImageAt: number
+): boolean {
+  const roundsSinceLast = interactionCount - lastImageAt;
+  if (roundsSinceLast < 7) return false;
+  if (roundsSinceLast >= 15) return true;
+  // 7-15 之间概率递增
+  const probability = (roundsSinceLast - 7) / (15 - 7);
+  return Math.random() < probability;
 }

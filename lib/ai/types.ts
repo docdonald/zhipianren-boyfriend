@@ -4,6 +4,7 @@ export type CharacterId = "lin-xu-bai" | "zhou-mu" | "jiang-yu" | "xia-ye";
 export interface ChatMessage {
   role: "user" | "assistant" | "system";
   content: string;
+  imageUrl?: string;
 }
 
 export interface ChatRequest {

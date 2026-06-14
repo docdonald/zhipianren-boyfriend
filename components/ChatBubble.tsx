@@ -1,4 +1,4 @@
-// 聊天气泡 - 支持 TTS 播放
+// 聊天气泡 - 支持 TTS 播放 + 图片展示
 import type { ChatMessage } from "@/lib/ai/types";
 
 interface ChatBubbleProps {
@@ -35,12 +35,24 @@ export default function ChatBubble({
       </div>
       <div className="relative max-w-[75%]">
         <div className="rounded-2xl rounded-tl-sm bg-white/5 backdrop-blur border border-white/10 px-4 py-3 text-white">
-          <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">
-            {message.content}
-            {isStreaming && (
-              <span className="inline-block w-1.5 h-4 ml-1 bg-white/70 animate-pulse" />
-            )}
-          </p>
+          {message.content && (
+            <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">
+              {message.content}
+              {isStreaming && (
+                <span className="inline-block w-1.5 h-4 ml-1 bg-white/70 animate-pulse" />
+              )}
+            </p>
+          )}
+          {message.imageUrl && (
+            <div className={`${message.content ? "mt-3" : ""} overflow-hidden rounded-xl`}>
+              <img
+                src={message.imageUrl}
+                alt="角色照片"
+                className="max-w-full h-auto rounded-xl border border-white/10"
+                loading="lazy"
+              />
+            </div>
+          )}
         </div>
         {onSpeak && !isStreaming && message.content && (
           <button

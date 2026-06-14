@@ -187,6 +187,7 @@ export default function ChatClient({
             try {
               const parsed = JSON.parse(data) as {
                 content?: string;
+                imageUrl?: string;
                 error?: string;
               };
               if (parsed.error) throw new Error(parsed.error);
@@ -200,6 +201,16 @@ export default function ChatClient({
                   };
                   return updated;
                 });
+              }
+              if (parsed.imageUrl) {
+                setMessages((prev) => [
+                  ...prev,
+                  {
+                    role: "assistant",
+                    content: parsed.content ?? "",
+                    imageUrl: parsed.imageUrl,
+                  },
+                ]);
               }
             } catch (e) {
               if (

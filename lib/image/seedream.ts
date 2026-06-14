@@ -196,3 +196,67 @@ export async function generatePortrait(
     return null;
   }
 }
+
+// =============================================================
+// 情境照片（对话中触发：用户索要自拍 / 自动推送）
+// 保持角色形象一致：基础锚点 + 情境变化
+// =============================================================
+
+const CONTEXTUAL_SCENES: Record<CharacterId, string[]> = {
+  "lin-xu-bai": [
+    "selfie angle, sitting by a window at dusk, holding a paper cup of coffee, soft warm light on face, gentle smile",
+    "selfie angle, on a Shanghai rooftop taking photos of city skyline, golden hour backlight, camera strap visible",
+    "selfie angle, leaning against a bookshelf at home, reading a worn paperback, afternoon light through curtains",
+    "selfie angle, walking down a tree-lined street in autumn, leaves falling, scarf slightly loose",
+    "selfie angle, kitchen counter, half-finished pour-over coffee, steam rising, morning light",
+  ],
+  "zhou-mu": [
+    "selfie angle, sitting at a desk late at night, whiskey glass half-full, city lights reflecting in window behind",
+    "selfie angle, standing by floor-to-ceiling window, arms crossed, skyline reflection on glass, cold gaze",
+    "selfie angle, reading documents under a cold desk lamp, focused expression, loosened tie",
+    "selfie angle, leaning against a black leather sofa, dim ambient light, suit jacket draped nearby",
+    "selfie angle, elevator mirror reflection, adjusting cufflinks, sharp jawline, overhead fluorescent light",
+  ],
+  "jiang-yu": [
+    "selfie angle, coding at a desk with multiple monitors, blue light on face, energy drink nearby, slight tired smile",
+    "selfie angle, standing in front of a whiteboard covered in architecture diagrams, marker in hand",
+    "selfie angle, sitting on a couch with laptop, debugging, window showing night city behind",
+    "selfie angle, minimalist apartment balcony, city lights in background, holding phone, hoodie zipped up",
+    "selfie angle, late night convenience store run, neon lights, holding coffee can, glasses slightly askew",
+  ],
+  "xia-ye": [
+    "selfie angle, on a rooftop at sunset, laughing, wind blowing hair, warm orange sky behind",
+    "selfie angle, sitting on a skateboard, holding an iced drink, urban graffiti wall background",
+    "selfie angle, leaning against a bright yellow wall, wearing headphones, sunny day, squinting slightly",
+    "selfie angle, night market street, holding skewers, neon signs behind, mouth half-open about to eat",
+    "selfie angle, basketball court at dusk, towel around neck, sweat glistening, street lamp on",
+  ],
+};
+
+export async function generateContextualPortrait(
+  characterId: CharacterId,
+  customScene?: string
+): Promise<PortraitResult | null> {
+  const basePrompt = CHARACTER_VISUAL_ANCHOR[characterId];
+  if (!basePrompt) return null;
+
+  const scenes = CONTEXTUAL_SCENES[characterId] ?? [];
+  const scene = customScene ?? scenes[Math.floor(Math.random() * scenes.length)] ?? "selfie angle, natural lighting";
+
+  // 融合 prompt：基础形象锚点 + 情境 + 一致性约束
+  const prompt = `${basePrompt}. ${scene}. Same person, consistent facial features and hairstyle, high quality portrait, cinematic color grading.`;
+
+  try {
+    const result = await generateImage({
+      prompt,
+      size: "1024x1024",
+      watermark: true,
+    });
+    return { url: result.url };
+  } catch (err) {
+    console.error(
+      `[seedream] generateContextualPortrait failed: ${err instanceof Error ? err.message : String(err)}`
+    );
+    return null;
+  }
+}
