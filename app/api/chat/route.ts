@@ -9,6 +9,7 @@ import {
   conversations,
   characterState,
   intimacyEvents,
+  type CharacterData,
 } from "@/lib/db/schema";
 import { getSystemPrompt } from "@/lib/ai/prompts";
 import { streamCharacterChat, getLlmConfig } from "@/lib/ai/chat-service";
@@ -302,11 +303,9 @@ export async function POST(req: NextRequest) {
         }
 
         // 10. 更新 character_state
-        const newData: {
-          keyEvents?: Array<{ kind: string; note: string; ts: number }>;
-          lastImageAt?: number;
-          [k: string]: unknown;
-        } = { ...((state?.characterData as object) ?? {}) };
+        const newData: CharacterData = {
+          ...((state?.characterData as CharacterData | undefined) ?? {}),
+        };
         if (judge?.event) {
           const prev = Array.isArray(newData.keyEvents) ? newData.keyEvents : [];
           newData.keyEvents = [

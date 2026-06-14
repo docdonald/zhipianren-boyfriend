@@ -2,6 +2,7 @@
 import {
   boolean,
   integer,
+  jsonb,
   pgTable,
   primaryKey,
   text,
@@ -87,7 +88,7 @@ export const characterState = pgTable(
     intimacyStage: integer("intimacy_stage").notNull().default(1), // 1-6
     intimacyScore: integer("intimacy_score").notNull().default(0), // 0-1000
     // 角色专属字段（JSON）
-    characterData: text("character_data", { mode: "json" })
+    characterData: jsonb("character_data")
       .notNull()
       .$type<CharacterData>(),
     // 时间
@@ -130,7 +131,7 @@ export const userProfile = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     characterId: text("character_id").notNull(),
     displayName: text("display_name"), // 用户在角色眼中的昵称
-    preferences: text("preferences", { mode: "json" })
+    preferences: jsonb("preferences")
       .notNull()
       .$type<Record<string, unknown>>()
       .default({}),
@@ -207,4 +208,7 @@ export interface CharacterData {
   nightModeActive?: boolean;
   lastNightConfession?: string;
   daytimeDeflectionCount?: number;
+  // 通用运行时字段
+  keyEvents?: Array<{ kind: string; note: string; ts: number }>;
+  lastImageAt?: number;
 }
