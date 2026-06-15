@@ -6,6 +6,24 @@ import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { CredentialsSignin } from "next-auth";
 import { redirect } from "next/navigation";
+import AuthForm from "./AuthForm";
+
+async function verifyTurnstileToken(token: string): Promise<boolean> {
+  const secret = process.env.TURNSTILE_SECRET_KEY;
+  if (!secret) return false;
+
+  const response = await fetch(
+    "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ secret, response: token }),
+    }
+  );
+
+  const data = await response.json();
+  return data.success === true;
+}
 
 export default function SignInPage({
   searchParams,
@@ -38,12 +56,16 @@ export default function SignInPage({
             {error === "invalid_credentials" && "邮箱或密码错误。"}
             {error === "password_mismatch" && "两次输入的密码不一致。"}
             {error === "missing_fields" && "请填写完整信息。"}
+            {error === "turnstile_required" && "请完成人机验证。"}
+            {error === "turnstile_failed" && "人机验证失败，请重试。"}
             {!(
               [
                 "user_exists",
                 "invalid_credentials",
                 "password_mismatch",
                 "missing_fields",
+                "turnstile_required",
+                "turnstile_failed",
               ] as string[]
             ).includes(error) && error}
           </div>
@@ -60,7 +82,10 @@ export default function SignInPage({
             </p>
           </div>
         ) : (
-          <form
+          <AuthForm
+            isRegister={isRegister}
+            siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+            callbackUrl={callbackUrl}
             action={async (formData) => {
               "use server";
               const email = formData.get("email")?.toString() ?? "";
@@ -79,6 +104,23 @@ export default function SignInPage({
                 if (password !== confirmPassword) {
                   redirect(
                     `/auth/signin?mode=register&error=password_mismatch&callbackUrl=${encodeURIComponent(callbackUrl)}`
+                  );
+                  return;
+                }
+
+                // Turnstile 验证
+                const turnstileToken =
+                  formData.get("turnstileToken")?.toString() ?? "";
+                if (!turnstileToken) {
+                  redirect(
+                    `/auth/signin?mode=register&error=turnstile_required&callbackUrl=${encodeURIComponent(callbackUrl)}`
+                  );
+                  return;
+                }
+                const turnstileValid = await verifyTurnstileToken(turnstileToken);
+                if (!turnstileValid) {
+                  redirect(
+                    `/auth/signin?mode=register&error=turnstile_failed&callbackUrl=${encodeURIComponent(callbackUrl)}`
                   );
                   return;
                 }
@@ -123,68 +165,7 @@ export default function SignInPage({
                 );
               }
             }}
-            className="rounded-2xl border border-white/10 bg-white/5 p-6"
-          >
-            <h2 className="text-lg font-semibold mb-1">
-              {isRegister ? "注册账号" : "用邮箱登录"}
-            </h2>
-            <p className="text-white/50 text-xs mb-5">
-              {isRegister
-                ? "新用户注册，输入邮箱和密码即可。"
-                : "老用户输入邮箱和密码直接登录。"}
-            </p>
-            <input
-              name="email"
-              type="email"
-              required
-              placeholder="your@email.com"
-              className="w-full bg-white/5 border border-white/10 rounded-full px-4 py-3 text-white placeholder:text-white/40 focus:outline-none focus:border-white/30 mb-3"
-            />
-            <input
-              name="password"
-              type="password"
-              required
-              placeholder="密码"
-              className="w-full bg-white/5 border border-white/10 rounded-full px-4 py-3 text-white placeholder:text-white/40 focus:outline-none focus:border-white/30 mb-3"
-            />
-            {isRegister && (
-              <input
-                name="confirmPassword"
-                type="password"
-                required
-                placeholder="确认密码"
-                className="w-full bg-white/5 border border-white/10 rounded-full px-4 py-3 text-white placeholder:text-white/40 focus:outline-none focus:border-white/30 mb-3"
-              />
-            )}
-            <button
-              type="submit"
-              className="w-full px-6 py-3 rounded-full bg-white text-black font-medium text-sm hover:bg-white/90"
-            >
-              {isRegister ? "注册" : "登录"}
-            </button>
-
-            <div className="mt-4 text-center">
-              {isRegister ? (
-                <a
-                  href={`/auth/signin?mode=login&callbackUrl=${encodeURIComponent(
-                    callbackUrl
-                  )}`}
-                  className="text-white/40 hover:text-white/70 text-xs"
-                >
-                  已有账号？直接登录 →
-                </a>
-              ) : (
-                <a
-                  href={`/auth/signin?mode=register&callbackUrl=${encodeURIComponent(
-                    callbackUrl
-                  )}`}
-                  className="text-white/40 hover:text-white/70 text-xs"
-                >
-                  还没有账号？立即注册 →
-                </a>
-              )}
-            </div>
-          </form>
+          />
         )}
 
         <p className="text-white/30 text-xs text-center mt-6">
