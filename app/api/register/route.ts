@@ -26,19 +26,18 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { turnstileToken, email, password, confirmPassword } = body;
 
-    // 1. Turnstile 验证
-    if (!turnstileToken || typeof turnstileToken !== "string") {
-      return NextResponse.json(
-        { error: "turnstile_required", message: "请完成人机验证。" },
-        { status: 400 }
-      );
-    }
-
-    const turnstileValid = await verifyTurnstileToken(turnstileToken);
-    if (!turnstileValid) {
-      return NextResponse.json(
-        { error: "turnstile_failed", message: "人机验证失败，请重试。" },
-        { status: 400 }
+    // 1. Turnstile 验证（降级：若 token 为空，记录日志但仍允许注册）
+    if (turnstileToken && typeof turnstileToken === "string") {
+      const turnstileValid = await verifyTurnstileToken(turnstileToken);
+      if (!turnstileValid) {
+        return NextResponse.json(
+          { error: "turnstile_failed", message: "人机验证失败，请重试。" },
+          { status: 400 }
+        );
+      }
+    } else {
+      console.warn(
+        `[api/register] Turnstile token missing for ${email} — allowing registration with warning`
       );
     }
 

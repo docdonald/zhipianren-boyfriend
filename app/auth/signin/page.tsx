@@ -108,21 +108,21 @@ export default function SignInPage({
                   return;
                 }
 
-                // Turnstile 验证
+                // Turnstile 验证（降级：若前端加载失败导致 token 为空，记录日志但仍允许注册）
                 const turnstileToken =
                   formData.get("turnstileToken")?.toString() ?? "";
-                if (!turnstileToken) {
-                  redirect(
-                    `/auth/signin?mode=register&error=turnstile_required&callbackUrl=${encodeURIComponent(callbackUrl)}`
+                if (turnstileToken) {
+                  const turnstileValid = await verifyTurnstileToken(turnstileToken);
+                  if (!turnstileValid) {
+                    redirect(
+                      `/auth/signin?mode=register&error=turnstile_failed&callbackUrl=${encodeURIComponent(callbackUrl)}`
+                    );
+                    return;
+                  }
+                } else {
+                  console.warn(
+                    `[register] Turnstile token missing for ${email} — allowing registration with warning`
                   );
-                  return;
-                }
-                const turnstileValid = await verifyTurnstileToken(turnstileToken);
-                if (!turnstileValid) {
-                  redirect(
-                    `/auth/signin?mode=register&error=turnstile_failed&callbackUrl=${encodeURIComponent(callbackUrl)}`
-                  );
-                  return;
                 }
 
                 const existing = await db

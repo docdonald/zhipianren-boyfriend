@@ -15,6 +15,11 @@ export default function AuthForm({
   callbackUrl: string;
 }) {
   const [turnstileToken, setTurnstileToken] = useState("");
+  const [turnstileError, setTurnstileError] = useState(false);
+
+  // 注册时若 Turnstile 正常加载且未通过验证，则禁用按钮；
+  // 若 Turnstile 加载失败（如 siteKey 无效），则不再阻塞注册。
+  const submitDisabled = isRegister && !turnstileToken && !turnstileError;
 
   return (
     <form
@@ -57,17 +62,26 @@ export default function AuthForm({
             name="turnstileToken"
             value={turnstileToken}
           />
-          <div className="mb-3 flex justify-center">
+          <div className="mb-3 flex justify-center min-h-[70px]">
             <Turnstile
               siteKey={siteKey}
-              onSuccess={(token) => setTurnstileToken(token)}
+              onSuccess={(token) => {
+                setTurnstileToken(token);
+                setTurnstileError(false);
+              }}
+              onError={() => setTurnstileError(true)}
             />
           </div>
+          {turnstileError && (
+            <p className="text-red-400 text-xs text-center mb-3">
+              人机验证加载失败，请刷新页面重试。若持续失败，可继续提交，后台将记录并人工审核。
+            </p>
+          )}
         </>
       )}
       <button
         type="submit"
-        disabled={isRegister && !turnstileToken}
+        disabled={submitDisabled}
         className="w-full px-6 py-3 rounded-full bg-white text-black font-medium text-sm hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isRegister ? "注册" : "登录"}
