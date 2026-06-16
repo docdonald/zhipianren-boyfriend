@@ -23,6 +23,7 @@ export default function TurnstileGuard({
 }) {
   const [verified, setVerified] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -42,6 +43,11 @@ export default function TurnstileGuard({
     setVerified(true);
   };
 
+  const handleError = (code: string) => {
+    console.error(`[Turnstile] 验证失败，错误码: ${code}`);
+    setErrorCode(code);
+  };
+
   // 避免服务端渲染闪烁
   if (!mounted) return null;
   if (verified) return null;
@@ -54,8 +60,17 @@ export default function TurnstileGuard({
           点击下方按钮完成验证，继续访问纸片人男友。
         </p>
         <div className="flex justify-center">
-          <Turnstile siteKey={siteKey} onSuccess={handleSuccess} />
+          <Turnstile
+            siteKey={siteKey}
+            onSuccess={handleSuccess}
+            onError={handleError}
+          />
         </div>
+        {errorCode && (
+          <p className="text-red-400 text-xs mt-3">
+            错误码: {errorCode}。请检查 Cloudflare Turnstile 配置。
+          </p>
+        )}
         <p className="text-white/30 text-xs mt-6">
           验证通过后 7 天内无需再次验证。
         </p>
