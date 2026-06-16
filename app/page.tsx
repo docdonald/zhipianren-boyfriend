@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { CHARACTERS } from "@/lib/ai/characters";
 import CharacterCard from "@/components/CharacterCard";
 import SignOutButton from "@/components/SignOutButton";
+import TurnstileGuard from "@/components/TurnstileGuard";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +14,12 @@ export default async function LandingPage() {
   const isLoggedIn = !!session?.user;
 
   return (
-    <main className="min-h-screen bg-[#0a0a0a] text-white">
+    <>
+      <TurnstileGuard
+        siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+        isLoggedIn={isLoggedIn}
+      />
+      <main className="min-h-screen bg-[#0a0a0a] text-white">
       {/* === 顶部导航 === */}
       <nav className="px-6 py-5 max-w-6xl mx-auto flex items-center justify-between">
         <div>
@@ -211,5 +217,6 @@ export default async function LandingPage() {
         </div>
       </footer>
     </main>
+    </>
   );
 }
