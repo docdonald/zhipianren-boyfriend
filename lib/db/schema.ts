@@ -188,6 +188,23 @@ export type CharacterId =
   | "jiang-yu"
   | "xia-ye";
 
+// AI 生成图片记录（永久链接存 R2）
+export const generatedImages = pgTable("generated_image", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  characterId: text("character_id"), // 可选：哪个角色对话中生成的
+  imageUrl: text("image_url").notNull(), // R2 永久链接
+  prompt: text("prompt").notNull(),
+  size: text("size"),
+  createdAt: timestamp("created_at", { mode: "date" })
+    .notNull()
+    .defaultNow(),
+});
+
 // 各角色 character_data 形状（松散 JSON）
 export interface CharacterData {
   // 林叙白
