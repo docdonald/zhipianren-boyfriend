@@ -137,16 +137,18 @@ export default function SignInPage({
                   return;
                 }
 
+                const name = formData.get("name")?.toString() ?? "";
                 const hashedPassword = await bcrypt.hash(password, 10);
                 await db.insert(users).values({
                   email,
                   password: hashedPassword,
+                  name: name || null,
                 });
 
                 // 注册成功后发送欢迎邮件（失败不影响注册）
                 try {
                   const { sendWelcomeEmail } = await import("@/lib/email/resend");
-                  await sendWelcomeEmail(email, "新朋友");
+                  await sendWelcomeEmail(email, name || "新朋友");
                 } catch (error) {
                   console.error("欢迎邮件发送失败：", error);
                 }

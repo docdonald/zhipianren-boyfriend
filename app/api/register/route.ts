@@ -24,7 +24,7 @@ async function verifyTurnstileToken(token: string): Promise<boolean> {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { turnstileToken, email, password, confirmPassword } = body;
+    const { turnstileToken, email, password, confirmPassword, name } = body;
 
     // 1. Turnstile 验证（降级：若 token 为空，记录日志但仍允许注册）
     if (turnstileToken && typeof turnstileToken === "string") {
@@ -75,12 +75,13 @@ export async function POST(request: Request) {
     await db.insert(users).values({
       email,
       password: hashedPassword,
+      name: name || null,
     });
 
     // 注册成功后发送欢迎邮件（失败不影响注册）
     try {
       const { sendWelcomeEmail } = await import("@/lib/email/resend");
-      await sendWelcomeEmail(email, "新朋友");
+      await sendWelcomeEmail(email, name || "新朋友");
     } catch (error) {
       console.error("欢迎邮件发送失败：", error);
     }

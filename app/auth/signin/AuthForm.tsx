@@ -34,6 +34,14 @@ export default function AuthForm({
           ? "新用户注册，输入邮箱和密码即可。"
           : "老用户输入邮箱和密码直接登录。"}
       </p>
+      {isRegister && (
+        <input
+          name="name"
+          type="text"
+          placeholder="昵称（可选）"
+          className="w-full bg-white/5 border border-white/10 rounded-full px-4 py-3 text-white placeholder:text-white/40 focus:outline-none focus:border-white/30 mb-3"
+        />
+      )}
       <input
         name="email"
         type="email"
