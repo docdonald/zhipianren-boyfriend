@@ -16,6 +16,7 @@ export default function AuthForm({
 }) {
   const [turnstileToken, setTurnstileToken] = useState("");
   const [turnstileError, setTurnstileError] = useState(false);
+  const [turnstileKey, setTurnstileKey] = useState(0);
 
   // 注册时若 Turnstile 正常加载且未通过验证，则禁用按钮；
   // 若 Turnstile 加载失败（如 siteKey 无效），则不再阻塞注册。
@@ -72,6 +73,7 @@ export default function AuthForm({
           />
           <div className="mb-3 flex justify-center min-h-[70px]">
             <Turnstile
+              key={turnstileKey}
               siteKey={siteKey}
               onSuccess={(token) => {
                 setTurnstileToken(token);
@@ -81,9 +83,22 @@ export default function AuthForm({
             />
           </div>
           {turnstileError && (
-            <p className="text-red-400 text-xs text-center mb-3">
-              人机验证加载失败，请刷新页面重试。若持续失败，可继续提交，后台将记录并人工审核。
-            </p>
+            <div className="text-center mb-3">
+              <p className="text-red-400 text-xs mb-2">
+                人机验证加载失败，请刷新页面或点击重试。若持续失败，可继续提交，后台将记录并人工审核。
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setTurnstileKey((k) => k + 1);
+                  setTurnstileToken("");
+                  setTurnstileError(false);
+                }}
+                className="text-xs text-white/60 hover:text-white underline"
+              >
+                刷新验证
+              </button>
+            </div>
           )}
         </>
       )}
