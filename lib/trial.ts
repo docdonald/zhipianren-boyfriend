@@ -1,8 +1,8 @@
 // 免费试用工具
-// 逻辑：未登录用户每角色可免费对话 10 轮（10 轮 user 消息）
+// 逻辑：未登录用户每角色可免费对话 5 轮（5 轮 user 消息）
 // 计数同时存到 localStorage（持久）和 cookie（兜底）
 
-export const FREE_TRIAL_LIMIT = 10;
+export const FREE_TRIAL_LIMIT = 5;
 
 const TRIAL_KEY = "pb.trial"; // localStorage key
 

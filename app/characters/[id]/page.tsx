@@ -182,7 +182,7 @@ export default async function CharacterDetailPage({ params }: PageProps) {
               >
                 <span className="absolute inset-0 bg-white translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-out" />
                 <span className="relative z-10 text-sm tracking-widest text-white group-hover:text-black transition-colors duration-500 font-serif-cn">
-                  {isLoggedIn ? "翻开对话 →" : "免费体验 10 轮 →"}
+                  {isLoggedIn ? "翻开对话 →" : "免费体验 5 轮 →"}
                 </span>
               </Link>
               {isLoggedIn ? (
@@ -204,7 +204,7 @@ export default async function CharacterDetailPage({ params }: PageProps) {
 
             {!isLoggedIn && (
               <p className="text-white/30 text-xs text-center pt-1">
-                无需注册 · 前 10 轮免费 · 登录后会记住你说过的话
+                无需注册 · 前 5 轮免费 · 登录后会记住你说过的话
               </p>
             )}
           </div>

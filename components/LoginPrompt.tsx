@@ -41,7 +41,7 @@ export default function LoginPrompt({ open, onDismiss }: LoginPromptProps) {
           这段对话<br />值得被记住
         </h2>
         <p className="text-white/60 text-sm leading-loose mb-8">
-          你已经免费和他聊了 10 轮。<br />
+          你已经免费和他聊了 5 轮。<br />
           登录后，他会记得你说过的话。<br />
           <span className="text-white/30 text-xs">
             —— 包括他没说完的那些省略号。

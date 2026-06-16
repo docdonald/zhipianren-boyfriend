@@ -89,7 +89,7 @@ export default async function LandingPage() {
             开始免费体验 →
           </Link>
           <span className="text-white/30 text-xs">
-            无需注册 · 10 轮免费对话
+            无需注册 · 5 轮免费对话
           </span>
         </div>
       </section>
@@ -190,7 +190,7 @@ export default async function LandingPage() {
         <p className="text-white/40 text-sm leading-loose">
           读完文档？选一个开始。<br />
           <span className="text-white/30 text-xs">
-            前 10 轮免费 · 之后请登录继续
+            前 5 轮免费 · 之后请登录继续
           </span>
         </p>
         {isLoggedIn ? (

@@ -2,7 +2,7 @@
 
 // 聊天客户端 - 支持登录 / 匿名双模式
 // 登录：服务端记忆 + 亲密度条 + TTS
-// 匿名：localStorage 记忆 + 10 轮免费试用 + 登录提示
+// 匿名：localStorage 记忆 + 5 轮免费试用 + 登录提示
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import type { CharacterMeta } from "@/lib/ai/characters";
@@ -227,9 +227,9 @@ export default function ChatClient({
         if (!isLoggedIn) {
           const next = incrementTrial(character.id);
           setTrialCount(next);
-          // 第 10 轮回应后弹出登录提示
+          // 第 5 轮回应后弹出登录提示
           if (next >= FREE_TRIAL_LIMIT) {
-            // 延迟一点弹出，让用户看到第 10 轮回复
+            // 延迟一点弹出，让用户看到第 5 轮回复
             setTimeout(() => setShowLoginPrompt(true), 1500);
           }
         } else {
