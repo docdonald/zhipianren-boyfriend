@@ -156,7 +156,9 @@ export default function ChatClient({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             characterId: character.id,
-            messages: newMessages.slice(-20),
+            messages: newMessages
+              .filter((m) => m.content.trim().length > 0)
+              .slice(-20),
             isAnonymous: !isLoggedIn,
           }),
         });
@@ -249,10 +251,17 @@ export default function ChatClient({
         setError(message);
         setMessages((prev) => {
           const updated = [...prev];
-          updated[assistantIndex] = {
-            role: "assistant",
-            content: `（连接出了点问题：${message}）`,
-          };
+          if (assistantIndex < updated.length) {
+            updated[assistantIndex] = {
+              role: "assistant",
+              content: `（连接出了点问题：${message}）`,
+            };
+          } else {
+            updated.push({
+              role: "assistant",
+              content: `（连接出了点问题：${message}）`,
+            });
+          }
           return updated;
         });
       } finally {
