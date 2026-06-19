@@ -213,6 +213,13 @@ export default async function LandingPage() {
             隐私政策
           </Link>
           <span>·</span>
+          <a
+            href="mailto:hello@2dboyfriend.online"
+            className="hover:text-white/60 transition-colors"
+          >
+            联系我们
+          </a>
+          <span>·</span>
           <span>纸片人男友</span>
         </div>
       </footer>
