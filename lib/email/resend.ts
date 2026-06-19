@@ -75,7 +75,7 @@ export async function sendWelcomeEmail(
 
   try {
     const { error } = await client.emails.send({
-      from: "纸片人男友 <hello@2dboyfriend.online.com>",
+      from: process.env.RESEND_FROM ?? "纸片人男友 <hello@2dboyfriend.online>",
       to: userEmail,
       subject: "你好呀，我是你的专属男友 💌",
       html: `

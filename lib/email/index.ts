@@ -38,8 +38,6 @@ export async function sendDailyLoveLetter(
   userEmail: string,
   userName: string
 ): Promise<{ ok: boolean; error?: string }> {
-  const { sendEmail } = await import("./resend");
-
   const loveLetter = await generateLoveLetter(userName);
 
   return sendEmail({
