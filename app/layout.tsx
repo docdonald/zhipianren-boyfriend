@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import CrispChat from "@/components/crisp-chat";
 
 export const metadata: Metadata = {
   title: "纸片人男友 · 4 个平行世界的他",
@@ -13,7 +14,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="zh-CN">
-      <body className="min-h-screen antialiased">{children}</body>
+      <body className="min-h-screen antialiased">
+        {children}
+        <CrispChat />
+      </body>
     </html>
   );
 }

@@ -217,7 +217,7 @@ export default async function LandingPage() {
             href="mailto:hello@2dboyfriend.online"
             className="hover:text-white/60 transition-colors"
           >
-            联系我们
+            联系我们：hello@2dboyfriend.online
           </a>
           <span>·</span>
           <span>纸片人男友</span>
