@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import CrispChat from "@/components/crisp-chat";
+import MicrosoftClarity from "@/components/microsoft-clarity";
 
 export const metadata: Metadata = {
   title: "纸片人男友 · 4 个平行世界的他",
@@ -17,6 +18,7 @@ export default function RootLayout({
       <body className="min-h-screen antialiased">
         {children}
         <CrispChat />
+        <MicrosoftClarity />
       </body>
     </html>
   );
